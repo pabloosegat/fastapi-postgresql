@@ -14,6 +14,9 @@ class ContaPagarReceberResponse(BaseModel):
     desc: str
     valor: float
     tipo: str
+    
+    class Config:
+        orm_mode = True
 
 class ContaPagarReceberRequest(BaseModel):
     desc: str
@@ -44,6 +47,4 @@ def criar_conta(conta: ContaPagarReceberRequest,
     db.commit()
     db.refresh(contas_pagar_receber)
     
-    return ContaPagarReceberResponse(
-        **contas_pagar_receber.__dict__
-    )
+    return contas_pagar_receber
