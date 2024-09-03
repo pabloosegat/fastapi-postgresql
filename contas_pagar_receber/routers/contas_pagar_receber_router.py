@@ -11,6 +11,11 @@ class ContaPagarReceberResponse(BaseModel):
     valor: float
     tipo: str
 
+class ContaPagarReceberRequest(BaseModel):
+    desc: str
+    valor: float
+    tipo: str
+
 
 @router.get('/', response_model=List[ContaPagarReceberResponse])
 def listar_contas():
@@ -22,3 +27,12 @@ def listar_contas():
         ContaPagarReceberResponse(id=5, desc='Conta de Salario', valor=5000.00, tipo='Receber'),
         ContaPagarReceberResponse(id=6, desc='Conta de Aluguel' , valor=5000.00, tipo='Pagar')
     ]
+
+@router.post('/', response_model=ContaPagarReceberResponse, status_code=201)
+def criar_conta(conta: ContaPagarReceberRequest): 
+    return ContaPagarReceberResponse(
+        id=7,
+        desc=conta.desc,
+        valor=conta.valor,
+        tipo=conta.tipo
+    )
