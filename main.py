@@ -1,8 +1,8 @@
 import uvicorn
 from fastapi import FastAPI
 
-from contas_pagar_receber.routers import contas_pagar_receber_router
-from contas_pagar_receber.models.contas_pagar_receber_model import ContaPagarReceber
+from routers import contas_pagar_receber_router
+from models.contas_pagar_receber_model import ContaPagarReceber
 from shared.database import engine, Base
 
 
