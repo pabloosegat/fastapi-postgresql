@@ -7,8 +7,8 @@ from shared.database import engine, Base
 
 
 app = FastAPI()
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
+# Base.metadata.drop_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 @app.get('/')
 def hello_world() -> dict:
