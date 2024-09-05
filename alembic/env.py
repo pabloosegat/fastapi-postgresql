@@ -20,6 +20,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from shared.database import Base
+from models.contas_pagar_receber_model import ContaPagarReceber
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
