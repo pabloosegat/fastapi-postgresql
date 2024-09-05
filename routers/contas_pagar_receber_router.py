@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List
 
 from shared.dependencies import get_db
-from contas_pagar_receber.models.contas_pagar_receber_model import ContaPagarReceber
+from models.contas_pagar_receber_model import ContaPagarReceber
 
 
 router = APIRouter(prefix='/contas-pagar-receber')
