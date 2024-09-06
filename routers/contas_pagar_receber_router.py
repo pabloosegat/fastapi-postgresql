@@ -52,6 +52,12 @@ def criar_conta(conta: ContaPagarReceberRequest,
 def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
     return db.query(ContaPagarReceber).all()
 
+@router.get('/{id_conta}', response_model=ContaPagarReceberResponse)
+def listar_uma_conta(id_conta: int,
+                    db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
+    conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
+    return conta
+
 # Update
 @router.put('/{id_conta}', response_model=ContaPagarReceberResponse, status_code=200)
 def atualizar_conta(id_conta: int,
