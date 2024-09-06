@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from shared.dependencies import get_db
 from models.contas_pagar_receber_model import ContaPagarReceber
+from shared.exceptions import NotFound
 
 
 router = APIRouter(prefix='/contas-pagar-receber')
@@ -56,6 +57,10 @@ def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse
 def listar_uma_conta(id_conta: int,
                     db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
+    
+    if conta is None:
+        raise NotFound('Conta')
+    
     return conta
 
 # Update
