@@ -56,10 +56,7 @@ def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse
 @router.get('/{id_conta}', response_model=ContaPagarReceberResponse)
 def listar_uma_conta(id_conta: int,
                     db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
-    conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
-    
-    if conta is None:
-        raise NotFound('Conta')
+    conta = consultar_conta_por_id(id_conta, db)
     
     return conta
 
@@ -69,7 +66,7 @@ def atualizar_conta(id_conta: int,
                 conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     
-    conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
+    conta = consultar_conta_por_id(id_conta, db)
     
     conta.desc = conta_request.desc
     conta.valor = conta_request.valor
@@ -86,7 +83,17 @@ def atualizar_conta(id_conta: int,
 def deletar_conta(id_conta: int,
                 db: Session=Depends(get_db)):
     
-    conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
+    conta = consultar_conta_por_id(id_conta, db)
     db.delete(conta)
     
     db.commit()
+
+
+def consultar_conta_por_id(id_conta: int,
+                        db: Session=Depends(get_db)) -> ContaPagarReceber:
+    conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
+    
+    if conta is None:
+        raise NotFound('Conta')
+    
+    return conta
