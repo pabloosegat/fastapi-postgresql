@@ -21,6 +21,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from shared.database import Base
 from models.contas_pagar_receber_model import ContaPagarReceber
+from models.fornecedor_cliente_model import FornecedorCliente
 
 target_metadata = Base.metadata
 
