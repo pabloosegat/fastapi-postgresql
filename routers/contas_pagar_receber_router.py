@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,10 +22,10 @@ class ContaPagarReceberResponse(BaseModel):
     desc: str
     valor: Decimal
     tipo: str
-    data_baixa: datetime
-    valor_baixa: Decimal
-    esta_baixada: bool
-    fornecedor_cliente: Union[FornecedorClienteResponse, None] = None
+    data_baixa:  Optional[datetime] = None
+    valor_baixa:  Optional[Decimal] = None
+    esta_baixada:  Optional[bool] = None
+    fornecedor_cliente: Optional[FornecedorClienteResponse] = None
     
     class Config:
         orm_mode = True
@@ -38,7 +38,7 @@ class ContaPagarReceberRequest(BaseModel):
     desc: str = Field(min_length=3, max_length=30)
     valor: Decimal = Field(gt=0)
     tipo: ContaPagarReceberTipoEnum
-    id_fornecedor_cliente: Union[int, None] = None
+    id_fornecedor_cliente: Optional[int] = None
 
 # CRUD
 
@@ -96,9 +96,11 @@ def baixar_conta(id_conta: int,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     
     conta = consultar_conta_por_id(id_conta, db)
-    conta.data_baixa = datetime.now()
-    conta.esta_baixada = True
-    conta.valor_baixa = conta.valor
+    
+    if conta.esta_baixada and conta.valor != conta.valor:
+        conta.data_baixa = datetime.now()
+        conta.esta_baixada = True
+        conta.valor_baixa = conta.valor
     
     db.add(conta)
     db.commit()
