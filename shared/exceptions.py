@@ -1,3 +1,5 @@
-class NotFound(Exception):
-    def __init__(self, name: str):
-        self.name = name
+class FornecedorNotFound(Exception):
+    pass
+
+class ContaNotFound(Exception):
+    pass

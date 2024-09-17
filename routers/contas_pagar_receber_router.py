@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -11,8 +11,7 @@ from shared.dependencies import get_db
 from models.contas_pagar_receber_model import ContaPagarReceber
 from models.fornecedor_cliente_model import FornecedorCliente
 from routers.fornecedor_cliente_router import FornecedorClienteResponse
-from shared.exceptions import NotFound
-
+from shared.exceptions import ContaNotFound, FornecedorNotFound
 
 
 router = APIRouter(prefix='/contas-pagar-receber')
@@ -44,19 +43,19 @@ class ContaPagarReceberRequest(BaseModel):
 
 # Create
 @router.post('', response_model=ContaPagarReceberResponse, status_code=201)
-def criar_conta(conta: ContaPagarReceberRequest,
+def criar_conta(conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse: 
-    conta_pagar_receber = ContaPagarReceber(
-        **conta.dict()
+    valida_fornecedor(conta_request.id_fornecedor_cliente, db)
+    
+    conta = ContaPagarReceber(
+        **conta_request.dict()
     )
     
-    valida_fornecedor(conta_pagar_receber.id_fornecedor_cliente, db)
-    
-    db.add(conta_pagar_receber)
+    db.add(conta)
     db.commit()
-    db.refresh(conta_pagar_receber)
+    db.refresh(conta)
     
-    return conta_pagar_receber
+    return conta
 
 # Read
 @router.get('', response_model=List[ContaPagarReceberResponse])
@@ -75,10 +74,10 @@ def listar_uma_conta(id_conta: int,
 def atualizar_conta(id_conta: int,
                 conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
+    valida_fornecedor(conta_request.id_fornecedor_cliente, db)
     
     conta = consultar_conta_por_id(id_conta, db)
     
-    valida_fornecedor(conta.id_fornecedor_cliente, db)
     
     conta.desc = conta_request.desc
     conta.valor = conta_request.valor
@@ -95,16 +94,16 @@ def atualizar_conta(id_conta: int,
 def baixar_conta(id_conta: int,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     
-    conta = consultar_conta_por_id(id_conta, db)
+    conta += consultar_conta_por_id(id_conta, db)
     
-    if conta.esta_baixada and conta.valor != conta.valor:
+    if not conta.esta_baixada or (conta.esta_baixada and conta.valor != conta.valor):
         conta.data_baixa = datetime.now()
         conta.esta_baixada = True
         conta.valor_baixa = conta.valor
     
-    db.add(conta)
-    db.commit()
-    db.refresh(conta)
+        db.add(conta)
+        db.commit()
+        db.refresh(conta)
     
     return conta
 
@@ -124,13 +123,13 @@ def consultar_conta_por_id(id_conta: int,
     conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
     
     if conta is None:
-        raise NotFound('Conta')
+        raise ContaNotFound
     
     return conta
 
 def valida_fornecedor(id_fornecedor_cliente: int,
                     db: Session=Depends(get_db)):
     if id_fornecedor_cliente is not None:
-        fornecedor_cliente = db.get(FornecedorCliente, id_fornecedor_cliente)
+        fornecedor_cliente: FornecedorCliente = db.get(FornecedorCliente, id_fornecedor_cliente)
         if fornecedor_cliente is None:
-            raise NotFound('Fornecedor')
+            raise FornecedorNotFound

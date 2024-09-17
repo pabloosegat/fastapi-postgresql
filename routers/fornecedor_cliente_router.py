@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from models.fornecedor_cliente_model import FornecedorCliente
 from shared.dependencies import get_db
-from shared.exceptions import NotFound
+from shared.exceptions import FornecedorNotFound
 
 
 router = APIRouter(prefix='/fornecedor-cliente')
@@ -77,6 +77,6 @@ def consultar_fornecedor_cliente_por_id(id_fornecedor_cliente: int,
     fornecedor_cliente: FornecedorCliente = db.get(FornecedorCliente, id_fornecedor_cliente)
     
     if fornecedor_cliente is None:
-        raise NotFound('Fornecedor/Cliente')
+        raise FornecedorNotFound
     
     return fornecedor_cliente
