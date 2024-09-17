@@ -1,6 +1,7 @@
 from decimal import Decimal
 from enum import Enum
 from typing import List, Union
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -21,6 +22,9 @@ class ContaPagarReceberResponse(BaseModel):
     desc: str
     valor: Decimal
     tipo: str
+    data_baixa: datetime
+    valor_baixa: Decimal
+    esta_baixada: bool
     fornecedor_cliente: Union[FornecedorClienteResponse, None] = None
     
     class Config:
@@ -80,6 +84,21 @@ def atualizar_conta(id_conta: int,
     conta.valor = conta_request.valor
     conta.tipo = conta_request.tipo
     conta.id_fornecedor_cliente = conta_request.id_fornecedor_cliente
+    
+    db.add(conta)
+    db.commit()
+    db.refresh(conta)
+    
+    return conta
+
+@router.post('/{id_conta}/baixar', response_model=ContaPagarReceberResponse, status_code=200)
+def baixar_conta(id_conta: int,
+                db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
+    
+    conta = consultar_conta_por_id(id_conta, db)
+    conta.data_baixa = datetime.now()
+    conta.esta_baixada = True
+    conta.valor_baixa = conta.valor
     
     db.add(conta)
     db.commit()

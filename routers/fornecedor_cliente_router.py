@@ -42,11 +42,9 @@ def listar_fornecedor_cliente(db: Session=Depends(get_db)) -> List[FornecedorCli
 
 @router.get('/{id_fornecedor_cliente}', response_model=FornecedorClienteResponse)
 def listar_um_fornecedor_cliente(id_fornecedor_cliente: int,
-                                db: Session=Depends(get_db)):
-    
-    for_cli = consultar_fornecedor_cliente_por_id(id_fornecedor_cliente, db)
-    
-    return for_cli
+                                db: Session=Depends(get_db)) -> FornecedorClienteResponse:
+
+    return consultar_fornecedor_cliente_por_id(id_fornecedor_cliente, db)
 
 # Update
 @router.put('/{id_fornecedor_cliente}', status_code=200)
