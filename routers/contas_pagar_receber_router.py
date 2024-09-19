@@ -1,18 +1,21 @@
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
-from datetime import datetime
+from datetime import date
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from shared.dependencies import get_db
 from models.contas_pagar_receber_model import ContaPagarReceber
 from models.fornecedor_cliente_model import FornecedorCliente
 from routers.fornecedor_cliente_router import FornecedorClienteResponse
-from shared.exceptions import ContaNotFound, FornecedorNotFound
+from shared.exceptions import ContaNotFound, FornecedorNotFound, MonthlyAccountLimitExceededException
 
+
+QTD_PERMITIDA_MES = 5
 
 router = APIRouter(prefix='/contas-pagar-receber')
 
@@ -21,7 +24,8 @@ class ContaPagarReceberResponse(BaseModel):
     desc: str
     valor: Decimal
     tipo: str
-    data_baixa:  Optional[datetime] = None
+    data_previsao: date
+    data_baixa:  Optional[date] = None
     valor_baixa:  Optional[Decimal] = None
     esta_baixada:  Optional[bool] = None
     fornecedor_cliente: Optional[FornecedorClienteResponse] = None
@@ -38,6 +42,7 @@ class ContaPagarReceberRequest(BaseModel):
     valor: Decimal = Field(gt=0)
     tipo: ContaPagarReceberTipoEnum
     id_fornecedor_cliente: Optional[int] = None
+    data_previsao: date
 
 # CRUD
 
@@ -46,7 +51,8 @@ class ContaPagarReceberRequest(BaseModel):
 def criar_conta(conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse: 
     valida_fornecedor(conta_request.id_fornecedor_cliente, db)
-    
+    valida_registros_novas_contas(conta_request, db)
+        
     conta = ContaPagarReceber(
         **conta_request.dict()
     )
@@ -78,7 +84,6 @@ def atualizar_conta(id_conta: int,
     
     conta = consultar_conta_por_id(id_conta, db)
     
-    
     conta.desc = conta_request.desc
     conta.valor = conta_request.valor
     conta.tipo = conta_request.tipo
@@ -97,7 +102,7 @@ def baixar_conta(id_conta: int,
     conta += consultar_conta_por_id(id_conta, db)
     
     if not conta.esta_baixada or (conta.esta_baixada and conta.valor != conta.valor):
-        conta.data_baixa = datetime.now()
+        conta.data_baixa = date.today()
         conta.esta_baixada = True
         conta.valor_baixa = conta.valor
     
@@ -133,3 +138,12 @@ def valida_fornecedor(id_fornecedor_cliente: int,
         fornecedor_cliente: FornecedorCliente = db.get(FornecedorCliente, id_fornecedor_cliente)
         if fornecedor_cliente is None:
             raise FornecedorNotFound
+
+def recupera_numero_registros(db, mes, ano) -> int:
+    qtd_registros = db.query(ContaPagarReceber).filter(extract('month', ContaPagarReceber.data_previsao) == mes).filter(extract('year', ContaPagarReceber.data_previsao) == ano).count()
+    
+    return qtd_registros
+
+def valida_registros_novas_contas(conta_request: ContaPagarReceberRequest, db) -> None:
+    if recupera_numero_registros(db, conta_request.data_previsao.month, conta_request.data_previsao.year) >= QTD_PERMITIDA_MES:
+        raise MonthlyAccountLimitExceededException
