@@ -44,6 +44,10 @@ class ContaPagarReceberRequest(BaseModel):
     id_fornecedor_cliente: Optional[int] = None
     data_previsao: date
 
+class PrevisaoPorMes(BaseModel):
+    mes: int
+    valor_total: Decimal
+
 # CRUD
 
 # Create
@@ -78,12 +82,13 @@ def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse
     return db.query(ContaPagarReceber).all()
 
 @router.get('/previsao-gastos-por-mes',
+    response_model=List[PrevisaoPorMes],
     summary='Relatorio gastos previstos no mes',
     description='Retorna um relatorio de gastos previstos para cada mês'
 )
 def previsao_gastos_por_mes(ano: int = date.today().year,
-                    db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
-    relatorio_gastos_previstos_para_o_mes(db, ano)
+                    db: Session=Depends(get_db)) -> List[PrevisaoPorMes]:
+    return relatorio_gastos_previstos_para_o_mes(db, ano)
 
 @router.get('/{id_conta}',
     response_model=ContaPagarReceberResponse,
@@ -186,7 +191,7 @@ def valida_limite_de_registro_nova_conta(conta_request: ContaPagarReceberRequest
     if contar_registros_por_mes(db, conta_request.data_previsao.month, conta_request.data_previsao.year) >= QTD_PERMITIDA_MES:
         raise MonthlyAccountLimitExceededException
     
-def relatorio_gastos_previstos_para_o_mes(db, ano):
+def relatorio_gastos_previstos_para_o_mes(db, ano) -> List[PrevisaoPorMes]:
     contas = db.query(ContaPagarReceber) \
                 .filter(extract('year', ContaPagarReceber.data_previsao) == ano) \
                 .filter(ContaPagarReceber.tipo == ContaPagarReceberTipoEnum.PAGAR).all()
@@ -194,13 +199,10 @@ def relatorio_gastos_previstos_para_o_mes(db, ano):
     valor_por_mes = {}
     for conta in contas:
         mes = conta.data_previsao.month
-        valor = conta.valor
         
         if valor_por_mes.get(mes) is None:
             valor_por_mes[mes] = 0
         
-        valor_por_mes[mes] += valor
+        valor_por_mes[mes] += conta.valor
     
-    
-    
-    return valor_por_mes
+    return [PrevisaoPorMes(mes=m, valor_total=v) for m, v in valor_por_mes.items()]
