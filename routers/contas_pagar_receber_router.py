@@ -50,8 +50,8 @@ class ContaPagarReceberRequest(BaseModel):
 @router.post('',
     response_model=ContaPagarReceberResponse,
     status_code=201,
-    summary="Criar conta",
-    description="Cria uma nova conta a pagar/receber"
+    summary='Criar conta',
+    description='Cria uma nova conta a pagar/receber'
 )
 def criar_conta(conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse: 
@@ -71,16 +71,16 @@ def criar_conta(conta_request: ContaPagarReceberRequest,
 # Read
 @router.get('',
     response_model=List[ContaPagarReceberResponse],
-    summary="Listar contas",
-    description="Retorna uma lista de todas as contas"
+    summary='Listar contas',
+    description='Retorna uma lista de todas as contas'
 )
 def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
     return db.query(ContaPagarReceber).all()
 
 @router.get('/{id_conta}',
     response_model=ContaPagarReceberResponse,
-    summary="Retornar conta pelo ID",
-    description="Retorna uma conta específica pelo seu ID"
+    summary='Retornar conta pelo ID',
+    description='Retorna uma conta específica pelo seu ID'
 )
 def listar_uma_conta(id_conta: int,
                     db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
@@ -88,12 +88,20 @@ def listar_uma_conta(id_conta: int,
     
     return conta
 
+@router.get('/previsao-gastos-por-mes',
+    summary='Relatorio gastos previstos no mes',
+    description='Retorna um relatorio de gastos previstos para cada mês'
+)
+def previsao_gastos_por_mes(ano: int = date.today().year,
+                    db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
+    relatorio_gastos_previstos_para_o_mes(db, ano)
+
 # Update
 @router.put('/{id_conta}',
     response_model=ContaPagarReceberResponse,
     status_code=200,
-    summary="Atualizar conta",
-    description="Atualiza os detalhes de uma conta existente"
+    summary='Atualizar conta',
+    description='Atualiza os detalhes de uma conta existente'
 )
 def atualizar_conta(id_conta: int,
                 conta_request: ContaPagarReceberRequest,
@@ -116,8 +124,8 @@ def atualizar_conta(id_conta: int,
 @router.post('/{id_conta}/baixar',
     response_model=ContaPagarReceberResponse,
     status_code=200,
-    summary="Baixar conta",
-    description="Marca uma conta como baixada (paga ou recebida)"
+    summary='Baixar conta',
+    description='Marca uma conta como baixada (paga ou recebida)'
 )
 def baixar_conta(id_conta: int,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
@@ -138,8 +146,8 @@ def baixar_conta(id_conta: int,
 # Delete
 @router.delete('/{id_conta}',
     status_code=204,
-    summary="Deletar conta",
-    description="Remove uma conta existente do sistema"
+    summary='Deletar conta',
+    description='Remove uma conta existente do sistema'
 )
 def deletar_conta(id_conta: int,
                 db: Session=Depends(get_db)):
@@ -177,3 +185,22 @@ def contar_registros_por_mes(db, mes, ano) -> int:
 def valida_limite_de_registro_nova_conta(conta_request: ContaPagarReceberRequest, db) -> None:
     if contar_registros_por_mes(db, conta_request.data_previsao.month, conta_request.data_previsao.year) >= QTD_PERMITIDA_MES:
         raise MonthlyAccountLimitExceededException
+    
+def relatorio_gastos_previstos_para_o_mes(db, ano):
+    contas = db.query(ContaPagarReceber) \
+                .filter(extract('year', ContaPagarReceber.data_previsao) == ano) \
+                .filter(ContaPagarReceber.tipo == ContaPagarReceberTipoEnum.PAGAR).all()
+    
+    valor_por_mes = {}
+    for conta in contas:
+        mes = conta.data_previsao.month
+        valor = conta.valor
+        
+        if valor_por_mes.get(mes) is None:
+            valor_por_mes[mes] = 0
+        
+        valor_por_mes[mes] += valor
+    
+    
+    
+    return valor_por_mes
