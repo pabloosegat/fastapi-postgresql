@@ -77,6 +77,14 @@ def criar_conta(conta_request: ContaPagarReceberRequest,
 def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
     return db.query(ContaPagarReceber).all()
 
+@router.get('/previsao-gastos-por-mes',
+    summary='Relatorio gastos previstos no mes',
+    description='Retorna um relatorio de gastos previstos para cada mês'
+)
+def previsao_gastos_por_mes(ano: int = date.today().year,
+                    db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
+    relatorio_gastos_previstos_para_o_mes(db, ano)
+
 @router.get('/{id_conta}',
     response_model=ContaPagarReceberResponse,
     summary='Retornar conta pelo ID',
@@ -87,14 +95,6 @@ def listar_uma_conta(id_conta: int,
     conta = obter_conta_por_id(id_conta, db)
     
     return conta
-
-@router.get('/previsao-gastos-por-mes',
-    summary='Relatorio gastos previstos no mes',
-    description='Retorna um relatorio de gastos previstos para cada mês'
-)
-def previsao_gastos_por_mes(ano: int = date.today().year,
-                    db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
-    relatorio_gastos_previstos_para_o_mes(db, ano)
 
 # Update
 @router.put('/{id_conta}',
