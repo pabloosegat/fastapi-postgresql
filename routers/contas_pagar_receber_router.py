@@ -47,11 +47,16 @@ class ContaPagarReceberRequest(BaseModel):
 # CRUD
 
 # Create
-@router.post('', response_model=ContaPagarReceberResponse, status_code=201)
+@router.post('',
+    response_model=ContaPagarReceberResponse,
+    status_code=201,
+    summary="Criar conta",
+    description="Cria uma nova conta a pagar/receber"
+)
 def criar_conta(conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse: 
     valida_fornecedor(conta_request.id_fornecedor_cliente, db)
-    valida_registros_novas_contas(conta_request, db)
+    valida_limite_de_registro_nova_conta(conta_request, db)
         
     conta = ContaPagarReceber(
         **conta_request.dict()
@@ -64,25 +69,38 @@ def criar_conta(conta_request: ContaPagarReceberRequest,
     return conta
 
 # Read
-@router.get('', response_model=List[ContaPagarReceberResponse])
+@router.get('',
+    response_model=List[ContaPagarReceberResponse],
+    summary="Listar contas",
+    description="Retorna uma lista de todas as contas"
+)
 def listar_contas(db: Session=Depends(get_db)) -> List[ContaPagarReceberResponse]:
     return db.query(ContaPagarReceber).all()
 
-@router.get('/{id_conta}', response_model=ContaPagarReceberResponse)
+@router.get('/{id_conta}',
+    response_model=ContaPagarReceberResponse,
+    summary="Retornar conta pelo ID",
+    description="Retorna uma conta específica pelo seu ID"
+)
 def listar_uma_conta(id_conta: int,
                     db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
-    conta = consultar_conta_por_id(id_conta, db)
+    conta = obter_conta_por_id(id_conta, db)
     
     return conta
 
 # Update
-@router.put('/{id_conta}', response_model=ContaPagarReceberResponse, status_code=200)
+@router.put('/{id_conta}',
+    response_model=ContaPagarReceberResponse,
+    status_code=200,
+    summary="Atualizar conta",
+    description="Atualiza os detalhes de uma conta existente"
+)
 def atualizar_conta(id_conta: int,
                 conta_request: ContaPagarReceberRequest,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     valida_fornecedor(conta_request.id_fornecedor_cliente, db)
     
-    conta = consultar_conta_por_id(id_conta, db)
+    conta = obter_conta_por_id(id_conta, db)
     
     conta.desc = conta_request.desc
     conta.valor = conta_request.valor
@@ -95,11 +113,16 @@ def atualizar_conta(id_conta: int,
     
     return conta
 
-@router.post('/{id_conta}/baixar', response_model=ContaPagarReceberResponse, status_code=200)
+@router.post('/{id_conta}/baixar',
+    response_model=ContaPagarReceberResponse,
+    status_code=200,
+    summary="Baixar conta",
+    description="Marca uma conta como baixada (paga ou recebida)"
+)
 def baixar_conta(id_conta: int,
                 db: Session=Depends(get_db)) -> ContaPagarReceberResponse:
     
-    conta += consultar_conta_por_id(id_conta, db)
+    conta += obter_conta_por_id(id_conta, db)
     
     if not conta.esta_baixada or (conta.esta_baixada and conta.valor != conta.valor):
         conta.data_baixa = date.today()
@@ -113,17 +136,22 @@ def baixar_conta(id_conta: int,
     return conta
 
 # Delete
-@router.delete('/{id_conta}', status_code=204)
+@router.delete('/{id_conta}',
+    status_code=204,
+    summary="Deletar conta",
+    description="Remove uma conta existente do sistema"
+)
 def deletar_conta(id_conta: int,
                 db: Session=Depends(get_db)):
     
-    conta = consultar_conta_por_id(id_conta, db)
+    conta = obter_conta_por_id(id_conta, db)
     db.delete(conta)
     
     db.commit()
 
 
-def consultar_conta_por_id(id_conta: int,
+# Auxiliar functions
+def obter_conta_por_id(id_conta: int,
                         db: Session=Depends(get_db)) -> ContaPagarReceber:
     conta: ContaPagarReceber = db.get(ContaPagarReceber, id_conta)
     
@@ -139,11 +167,13 @@ def valida_fornecedor(id_fornecedor_cliente: int,
         if fornecedor_cliente is None:
             raise FornecedorNotFound
 
-def recupera_numero_registros(db, mes, ano) -> int:
-    qtd_registros = db.query(ContaPagarReceber).filter(extract('month', ContaPagarReceber.data_previsao) == mes).filter(extract('year', ContaPagarReceber.data_previsao) == ano).count()
+def contar_registros_por_mes(db, mes, ano) -> int:
+    qtd_registros = db.query(ContaPagarReceber) \
+                        .filter(extract('month', ContaPagarReceber.data_previsao) == mes) \
+                        .filter(extract('year', ContaPagarReceber.data_previsao) == ano).count()
     
     return qtd_registros
 
-def valida_registros_novas_contas(conta_request: ContaPagarReceberRequest, db) -> None:
-    if recupera_numero_registros(db, conta_request.data_previsao.month, conta_request.data_previsao.year) >= QTD_PERMITIDA_MES:
+def valida_limite_de_registro_nova_conta(conta_request: ContaPagarReceberRequest, db) -> None:
+    if contar_registros_por_mes(db, conta_request.data_previsao.month, conta_request.data_previsao.year) >= QTD_PERMITIDA_MES:
         raise MonthlyAccountLimitExceededException
