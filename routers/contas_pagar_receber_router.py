@@ -194,7 +194,8 @@ def valida_limite_de_registro_nova_conta(conta_request: ContaPagarReceberRequest
 def relatorio_gastos_previstos_para_o_mes(db, ano) -> List[PrevisaoPorMes]:
     contas = db.query(ContaPagarReceber) \
                 .filter(extract('year', ContaPagarReceber.data_previsao) == ano) \
-                .filter(ContaPagarReceber.tipo == ContaPagarReceberTipoEnum.PAGAR).all()
+                .filter(ContaPagarReceber.tipo == ContaPagarReceberTipoEnum.PAGAR) \
+                .order_by(ContaPagarReceber.data_previsao).all()
     
     valor_por_mes = {}
     for conta in contas:
