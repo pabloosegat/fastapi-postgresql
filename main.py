@@ -12,14 +12,14 @@ app = FastAPI()
 # Base.metadata.drop_all(bind=engine)
 # Base.metadata.create_all(bind=engine)
 
-@app.get('/')
+@app.get('/', tags=['root'])
 def hello_world() -> dict:
     return {'message': 'Hello, World!'}
 
 # Routers
-app.include_router(contas_pagar_receber_router.router, tags=['Contas'])
-app.include_router(fornecedor_cliente_router.router, tags=['Fornecedores'])
-app.include_router(fornecedor_cliente_vs_contas_pagar_receber_router.router, tags=['Fornecedores'])
+app.include_router(contas_pagar_receber_router.router, tags=['contas'])
+app.include_router(fornecedor_cliente_router.router, tags=['fornecedores'])
+app.include_router(fornecedor_cliente_vs_contas_pagar_receber_router.router, tags=['fornecedores'])
 
 # Exceptions
 app.add_exception_handler(ContaNotFound, conta_not_found_handler)
