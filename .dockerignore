@@ -1,0 +1,11 @@
+# Folders
+.venv/
+.pytest_cache/
+*__pycache__/
+test/
+
+# Files
+.gitignore
+.dockerignore
+.env
+test.db
