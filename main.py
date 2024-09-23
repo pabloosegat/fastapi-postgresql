@@ -17,9 +17,9 @@ def hello_world() -> dict:
     return {'message': 'Hello, World!'}
 
 # Routers
-app.include_router(contas_pagar_receber_router.router)
-app.include_router(fornecedor_cliente_router.router)
-app.include_router(fornecedor_cliente_vs_contas_pagar_receber_router.router)
+app.include_router(contas_pagar_receber_router.router, tags=['Contas'])
+app.include_router(fornecedor_cliente_router.router, tags=['Fornecedores'])
+app.include_router(fornecedor_cliente_vs_contas_pagar_receber_router.router, tags=['Fornecedores'])
 
 # Exceptions
 app.add_exception_handler(ContaNotFound, conta_not_found_handler)
